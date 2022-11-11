@@ -1,0 +1,111 @@
+---
+title: "NEI_its_Reliability"
+author: "Yansen Chen"
+date: '2022-11-11'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1. Base information
+
+This page shows how to use R code for calculating the nitrogen efficiency index (NEI) and its reliability with example data.
+
+The NEI combining the (G)EBV of N intake (NINT, Kg/d), milk true protein N (MTPN, Kg/d), and milk urea N yield (MUNY, g/d) through the selection index. PS: the units of the 3 features are different 
+
+The features (NINT, MTPN, MUNY) were divided into 2 classes: primiparous and multiparous (lactations 2 to 5) and shown as NINT1, MTPN1, MUNY1, NINT2+, MTPN2+, and MUNY2+ (6 traits in total)
+
+The index weights (a) of the 6 studied traits were calculated by selection responses, which assumed that the genetic selection responses for NINT, MTPN, and MUNY were 0, 1, and -1, respectively. This assumption allows genetic selection for NEI to keep NINT unchanged, increase MTPN, and decrease MUNY. 
+
+
+
+## 2. Read example data
+Please download the example data (2 files) from https://github.com/Yansen0515/GP_NEI.
+Then put them in your work directory
+```{r}
+# install.packages("data.table")
+library(data.table)# please download it before using it
+db <- fread("example_data.csv") # read example data
+head(db) # check the example data
+str(db)
+G <- as.matrix(fread("A_G.csv")) # read genetic (co)variance
+G
+```
+
+#### This example data includes two martixs: db and G
+#### The db martix (1,000 x 13) includes 1000 animals with EBV  of 6 traits and their reliabilities.
+#### The G martix (6 x 6) includes genetic (co)variance component of 6 traits
+
+## 3. The NEI
+
+Calculating the NEI base on the EBV of 6 traits, the index weights (a) first need to get. 
+
+### 3.1 Index weights (a)
+```{r}
+## Create the transformation matrix (T), which is used to transform six traits into three features 
+## Half of each feature in primiparous and multiparous (lactations 2 to 5)
+T = matrix(c(0.5, 0,    0,   0.5,  0,    0,
+             0,   0.5,  0,   0,    0.5,  0,
+             0,   0,    0.5, 0,    0,   0.5), ncol = 6, byrow = T)
+
+d_g <- diag(diag(G)) # get the variance for six traits
+
+#  Standardized genetic (co)variance components because the units of the 6 traits are different
+Gs <- solve(sqrt(d_g)) %*% G %*% solve(sqrt(d_g)) 
+
+Gs2 = T %*% Gs %*% t(T) # Get the transformed Gs2 matrix
+
+Ds2 = diag(diag(Gs2))
+T2 = solve(sqrt(Ds2)) %*% T # Standardized transformation matrix T
+
+Gs3 = T2 %*% Gs %*% t(T2)   # Get the standardized transformation matrix Gs3
+
+r = matrix(c(0,1,-1), ncol = 1) # create the selection response vector (r) of 3 features
+
+a = solve(Gs3) %*% r # get the standardized index weight of 3 features
+a2 = t(a)%*%T2       # Get the standardized index weight of 6 traits
+a_orig = t(a2 %*% solve(sqrt(d_g))) # Get the index weight of 6 traits
+a_orig
+
+```
+
+### 3.2 NEI values
+
+```{r}
+db$NEI = as.matrix(db[,2:7]) %*% a_orig
+head(db)
+```
+## 4. Reliability of NEI
+
+
+```{r}
+G <- as.matrix.data.frame(G)
+Vg = t(a_orig) %*% G %*% a_orig # Maximum  genetic variance
+sREL_six <- sqrt(db[,8:13]) # square root of relibility (REL) for each trait
+
+# using the loop to get the relibility (REL) of NEI
+REL_NEI <- c()
+for (i in 1:nrow(sREL_six)) {
+  w_tem <- a_orig * t(sREL_six[i])
+  Vanimal = t(w_tem)%*%G%*%w_tem
+  REL_tem = Vanimal/Vg
+  REL_NEI = rbind(REL_NEI, REL_tem)
+  
+}
+
+df <- cbind(db, REL_NEI) #put all results together
+colnames(df)[15] <- "Relibility_NEI"
+head(df)
+
+```
+
+
+## Finally, we have NEI and its reliability
+
+
+For more theoretical and formula details, please read the following article?
+
+
+Chen, Y., H. Atashi, C. Grelet, S. Vanderick, H. Hu, and N. Gengler. 2022. Defining a nitrogen efficiency index in Holstein cows and assessing its potential impact on the breeding program of bulls. J. Dairy Sci. 105: 7575-7587. https://doi.org/10.3168/jds.2021-21681.
