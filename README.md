@@ -1,7 +1,7 @@
 # R code for calculating the NEI and its reliability with example data
 
-* R code:  "R_code_NEI_its_Reliability.html" or "R_code_NEI_its_Reliability.Rmd" (written by R Markdown)
-* Example data: "example_data.csv" and "A_G.csv" (Please download both)
+* R code:  "R_code_NEI_its_Reliability.html" **or** "R_code_NEI_its_Reliability.Rmd" (written by R Markdown)
+* Example data: "example_data.csv" and "A_G.csv" (**Please download both !!!**)
 
 
 
