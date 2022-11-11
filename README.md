@@ -1,6 +1,13 @@
 # R code for calculating the NEI and its reliability with example data
 
-Materials provided here are provided for the following article：
+* R code:  "R_code_NEI_its_Reliability.html" or "R_code_NEI_its_Reliability.Rmd" (written by R Markdown)
+* Example data: "example_data.csv" and "A_G.csv" (Please download both)
+
+
+
+
+
+## Materials provided here are provided for the following article：
 
 ## Validating genomic prediction for nitrogen efficiency index and its composition traits of Holstein cows in early lactation
 
